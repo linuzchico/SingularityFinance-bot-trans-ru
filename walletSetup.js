@@ -23,8 +23,15 @@ function readPrivateKeys() {
 }
 
 function setupProviderAndWallet(privateKeyIndex = 0) {
-    const provider = new ethers.providers.JsonRpcProvider('https://rpc-testnet.singularityfinance.ai');
-    const privateKeys = readPrivateKeys();
+    let provider;
+    let privateKeys;
+
+    try {
+        provider = new ethers.providers.JsonRpcProvider('https://rpc-testnet.singularityfinance.ai');
+        privateKeys = readPrivateKeys();
+    } catch (e) {
+        console.log(e);
+    }
 
     if (privateKeys.length === 0) {
         throw new Error('Файл с приватными ключами пуст!');

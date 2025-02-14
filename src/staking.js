@@ -94,7 +94,7 @@ const partialStakingABI = [
 ];
 
 // Функция для повторных попыток
-async function retry(operation, maxRetries = 5) {
+async function retry(operation, maxRetries = 15) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await operation();

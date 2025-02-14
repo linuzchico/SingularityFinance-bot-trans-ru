@@ -14,7 +14,7 @@ const contractAddress = '0x6dC404EFd04B880B0Ab5a26eF461b63A12E3888D';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Функция-обертка для повторных попыток
-async function retryOperation(operation, maxRetries = 5) {
+async function retryOperation(operation, maxRetries = 15) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await operation();
