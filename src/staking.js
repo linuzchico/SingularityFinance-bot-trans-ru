@@ -248,7 +248,7 @@ logger.info('Waiting 10 seconds to update...');
 await new Promise(resolve => setTimeout(resolve, 10000));
 
 const userInfoAfter = await stakingContract.userInfo(wallet.address);
-logger.info('User's betting info after withdrawal:');
+logger.info('Users betting info after withdrawal:');
 logger.info(`- Amount of bets: ${ethers.utils.formatEther(userInfoAfter.amount)} WSFI`);
 logger.info(`- Score of bets: ${userInfoAfter.score.toString()}`);
 const actualWithdrawn = userInfoBefore.amount.sub(userInfoAfter.amount);
