@@ -219,7 +219,7 @@ const amountInWei = ethers.utils.parseEther(amount.toString());
 
 try {
 const userInfoBefore = await stakingContract.userInfo(wallet.address);
-logger.info('User's betting information before withdrawal:');
+logger.info('Users betting information before withdrawal:');
 logger.info(`- Amount of bets: ${ethers.utils.formatEther(userInfoBefore.amount)} SFI`);
 logger.info(`- Score of bets: ${userInfoBefore.score.toString()}`);
 
