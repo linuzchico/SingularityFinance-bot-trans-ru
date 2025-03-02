@@ -19,7 +19,7 @@ async function solveCaptcha() {
         );
         return token;
     } catch (error) {
-        console.error('Не удалось решить капчу:', error);
+        console.error('Failed to solve captcha:', error);
         throw error;
     }
 }
@@ -28,7 +28,7 @@ async function claimFaucet(address) {
     try {
         const captchaToken = await solveCaptcha();
         if (!captchaToken) {
-            console.error(`Не удалось получить токен Anti-captcha, адрес: ${address}`);
+            console.error(`Failed to get Anti-captcha token, address: ${address}`);
             return false;
         }
 
@@ -50,8 +50,8 @@ async function claimFaucet(address) {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         };
 
-        // Первый шаг: запуск сессии
-        logger.info('Запуск сессии для:', address);
+        // First step: start session
+        logger.info('Starting session for:', address);
         const sessionResponse = await axios.post(
             'https://faucet-testnet.singularityfinance.ai/api/startSession',
             { addr: address, captchaToken: captchaToken },
@@ -63,34 +63,34 @@ async function claimFaucet(address) {
         );
 
         if (sessionResponse.status !== 200) {
-            logger.error(`Не удалось запустить сессию для ${address}. Статус код: ${sessionResponse.status}`);
+            logger.error(`Failed to start session for ${address}. Status code: ${sessionResponse.status}`);
             return false;
         }
 
         if (sessionResponse.data.status === 'failed') {
             if (sessionResponse.data.failedCode === 'RECURRING_LIMIT') {
-                logger.info(`Адрес ${address} уже получил средства. Причина: ${sessionResponse.data.failedReason}`);
+                logger.info(`Address ${address} has already received funds. Reason: ${sessionResponse.data.failedReason}`);
                 return { status: 'already_claimed', message: sessionResponse.data.failedReason };
             } else {
-                logger.error(`Не удалось запустить сессию для ${address}. Причина: ${sessionResponse.data.failedReason}`);
+                logger.error(`Failed to start session for ${address}. Reason: ${sessionResponse.data.failedReason}`);
                 return { status: 'failed', message: sessionResponse.data.failedReason };
             }
         }
         
         if (!sessionResponse.data.session) {
-            logger.error(`Не удалось запустить сессию для ${address}. Не получен действительный ID сессии`);
-            return { status: 'failed', message: 'Не получен действительный ID сессии' };
+            logger.error(`Failed to start session for ${address}. No valid session ID received`);
+            return { status: 'failed', message: 'No valid session ID received' };
         }
 
-        // Получение ID сессии из ответа
+        // Get session ID from response
         const sessionId = sessionResponse.data.session;
 
-        // Второй шаг: получение награды
+        // Second step: claim reward
         const claimResponse = await axios.post(
             'https://faucet-testnet.singularityfinance.ai/api/claimReward',
             {
                 session: sessionId,
-                captchaToken: await solveCaptcha() // Решение капчи снова
+                captchaToken: await solveCaptcha() // Solve captcha again
             },
             {
                 headers: headers,
@@ -100,25 +100,25 @@ async function claimFaucet(address) {
         );
 
         if (claimResponse.status !== 200) {
-            logger.error(`Не удалось получить награду для ${address}. Статус код: ${claimResponse.status}`);
+            logger.error(`Failed to claim reward for ${address}. Status code: ${claimResponse.status}`);
             return false;
         }
         if (claimResponse.data.status === 'claiming' && claimResponse.data.session) {
-            logger.info(`Успешное получение награды для ${address}:`, claimResponse.data);
+            logger.info(`Successfully claimed reward for ${address}:`, claimResponse.data);
             return { status: 'success', data: claimResponse.data };
         } else {
-            logger.error(`Не удалось получить награду для ${address}. Ответ сервера:`, claimResponse.data);
-            return { status: 'failed', message: 'Не удалось получить награду' };
+            logger.error(`Failed to claim reward for ${address}. Server response:`, claimResponse.data);
+            return { status: 'failed', message: 'Failed to claim reward' };
         }
     } catch (error) {
-        logger.error(`Ошибка при получении награды для ${address}:`, error.message);
+        logger.error(`Error while claiming reward for ${address}:`, error.message);
         if (error.response) {
-            logger.error('Статус ответа:', error.response.status);
-            logger.error('Данные ответа:', error.response.data);
+            logger.error('Response status:', error.response.status);
+            logger.error('Response data:', error.response.data);
         } else if (error.request) {
-            logger.error('Ответ не получен:', error.request);
+            logger.error('No response received:', error.request);
         }
-        throw error; // Бросить ошибку для захвата механизмом повторных попыток
+        throw error; // Throw error to be caught by retry mechanism
     }
 }
 
@@ -127,29 +127,29 @@ async function claimFaucetWithRetry(address, maxRetries = 3, delay = 5000) {
         try {
             const result = await claimFaucet(address);
             
-            // Если адрес уже получил средства, вернуть результат без повторных попыток
+            // If address already received funds, return result without retries
             if (result.status === 'already_claimed') {
                 return result;
             }
             
-            // Если успешно, вернуть результат
+            // If successful, return result
             if (result.status === 'success') {
                 return result;
             }
             
-            // Если другая ошибка, продолжить попытки
-            logger.error(`Попытка ${attempt} не удалась, ждем ${delay/1000} секунд перед повторной попыткой...`);
+            // If other error, continue retries
+            logger.error(`Attempt ${attempt} failed, waiting ${delay/1000} seconds before retrying...`);
             await new Promise(resolve => setTimeout(resolve, delay));
         } catch (error) {
             if (attempt === maxRetries) {
-                logger.error(`Последняя попытка не удалась, адрес: ${address}`, error);
-                return { status: 'failed', message: 'Не удалось после нескольких попыток' };
+                logger.error(`Last attempt failed, address: ${address}`, error);
+                return { status: 'failed', message: 'Failed after multiple attempts' };
             }
-            logger.error(`Ошибка при попытке ${attempt}, ждем ${delay/1000} секунд перед повторной попыткой...`, error.message);
+            logger.error(`Error on attempt ${attempt}, waiting ${delay/1000} seconds before retrying...`, error.message);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
-    return { status: 'failed', message: 'Достигнуто максимальное количество попыток' };
+    return { status: 'failed', message: 'Reached maximum number of attempts' };
 }
 
 module.exports = { claimFaucetWithRetry };
