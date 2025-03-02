@@ -8,16 +8,16 @@ function readPrivateKeys() {
     try {
         const data = fs.readFileSync(privateKeyPath, 'utf8');
         return data.split('\n')
-            .map(key => key.trim())  // Удаление пробелов в начале и конце каждой строки
-            .filter(key => key !== '')  // Фильтрация пустых строк
+            .map(key => key.trim())  // Remove spaces at the beginning and end of each line
+            .filter(key => key !== '')  // Filter empty lines
             .map(key => {
-                // Удаление всех пробелов, включая пробелы в середине строки
+                // Remove all spaces, including spaces in the middle of the line
                 key = key.replace(/\s/g, '');
-                // Если ключ начинается с '0x', удалить его
+                // If the key starts with '0x', remove it
                 return key.startsWith('0x') ? key.slice(2) : key;
             });
     } catch (error) {
-        console.error('Не удалось прочитать приватные ключи:', error);
+        console.error('Failed to read private keys:', error);
         return [];
     }
 }
@@ -34,11 +34,11 @@ function setupProviderAndWallet(privateKeyIndex = 0) {
     }
 
     if (privateKeys.length === 0) {
-        throw new Error('Файл с приватными ключами пуст!');
+        throw new Error('The private key file is empty!');
     }
 
     if (privateKeyIndex >= privateKeys.length) {
-        throw new Error(`Индекс выходит за пределы диапазона! Всего ключей: ${privateKeys.length}`);
+        throw new Error(`Index out of range! Total keys: ${privateKeys.length}`);
     }
 
     const privateKey = privateKeys[privateKeyIndex];
