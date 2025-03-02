@@ -4,26 +4,25 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// Чтение файла ABI
-
+// Reading the ABI file
 const wrappedSFIABI = require(path.join(__dirname, 'ABI', 'WrappedSFI.json'));
-// Адрес контракта WrappedSFI
+// WrappedSFI contract address
 const contractAddress = '0x6dC404EFd04B880B0Ab5a26eF461b63A12E3888D';
 
-// Вспомогательная функция: задержка
+// Helper function: delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Функция-обертка для повторных попыток
+// Wrapper function for retry attempts
 async function retryOperation(operation, maxRetries = 15) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await operation();
         } catch (error) {
             if (attempt === maxRetries) {
-                logger.error(`Все попытки не удались, последняя ошибка: ${error.message}`);
+                logger.error(`All attempts failed, last error: ${error.message}`);
                 throw error;
             }
-            logger.warn(`Попытка ${attempt} не удалась, повтор через 5 секунд...`);
+            logger.warn(`Attempt ${attempt} failed, retrying in 5 seconds...`);
             await delay(5000);
         }
     }
@@ -37,16 +36,16 @@ async function depositSFI(wallet, amount) {
 
         const balance = await provider.getBalance(wallet.address);
         if (balance.lt(amountInWei)) {
-            throw new Error('Недостаточно средств');
+            throw new Error('Insufficient funds');
         }
 
-        logger.info(`Обмен SFI на ${amount} WSFI...`);
+        logger.info(`Exchanging SFI for ${amount} WSFI...`);
         const tx = await contract.deposit({ value: amountInWei });
 
-        logger.info('Транзакция отправлена, ожидание подтверждения...');
+        logger.info('Transaction sent, waiting for confirmation...');
         const receipt = await tx.wait();
         
-        logger.info(`Обмен успешен! Хэш транзакции: ${receipt.transactionHash}`);
+        logger.info(`Exchange successful! Transaction hash: ${receipt.transactionHash}`);
         return receipt.transactionHash;
     });
 }
@@ -74,16 +73,16 @@ async function withdrawSFI(wallet, amount) {
 
         const wSFIBalance = await contract.balanceOf(wallet.address);
         if (wSFIBalance.lt(amountInWei)) {
-            throw new Error('Недостаточно WSFI');
+            throw new Error('Insufficient WSFI');
         }
 
-        logger.info(`Обмен WSFI на ${amount} SFI...`);
+        logger.info(`Exchanging WSFI for ${amount} SFI...`);
         const tx = await contract.withdraw(amountInWei);
 
-        logger.info('Транзакция отправлена, ожидание подтверждения...');
+        logger.info('Transaction sent, waiting for confirmation...');
         const receipt = await tx.wait();
         
-        logger.info(`Обмен успешен! Хэш транзакции: ${receipt.transactionHash}`);
+        logger.info(`Exchange successful! Transaction hash: ${receipt.transactionHash}`);
         return receipt.transactionHash;
     });
 }
