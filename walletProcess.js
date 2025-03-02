@@ -21,19 +21,19 @@ const {
     DEX_CONTRACT_ADDRESS  
 } = require('./src/DEX');
 
-// Определение констант
+// Define constants
 const RATIOS = {
-    // Распределение SFI
-    SFI_TO_SWAP: 0.05,    // 8% SFI обмен на AIMM
-    SFI_TO_WSFI: 0.92,    // 92% SFI конвертация в WSFI
+    // SFI distribution
+    SFI_TO_SWAP: 0.05,    // 8% SFI swap to AIMM
+    SFI_TO_WSFI: 0.92,    // 92% SFI conversion to WSFI
     
-    // Распределение WSFI
-    WSFI_TO_SWAP: 0.05,   // 8% WSFI обмен на AIMM
-    WSFI_TO_STAKE: 0.03,  // 5% одиночная ставка (всего 10%)
-    WSFI_TO_LP: 0.09      // около 12% для LP
+    // WSFI distribution
+    WSFI_TO_SWAP: 0.05,   // 8% WSFI swap to AIMM
+    WSFI_TO_STAKE: 0.03,  // 5% single staking (total 10%)
+    WSFI_TO_LP: 0.09      // about 12% for LP
 };
 
-const WSFI_THRESHOLD = 4;  // Получение средств, если баланс WSFI ниже 4
+const WSFI_THRESHOLD = 4;  // Get funds if WSFI balance is below 4
 const SFI_ADDRESS = "0x34Be5b8C30eE4fDe069DC878989686aBE9884470";
 const WSFI_ADDRESS = "0x6dC404EFd04B880B0Ab5a26eF461b63A12E3888D";
 const AIMM_ADDRESS = "0xAa4aFA7C07405992e3f6799dCC260D389687077a";
@@ -44,53 +44,52 @@ async function runWalletOperations(walletIndex) {
     const address = wallet.address;
 
     try {
-        logger.info(`Начало обработки кошелька ${walletIndex} (${address})`);
+        logger.info(`Starting wallet processing ${walletIndex} (${address})`);
 
-        // 1. Проверка баланса WSFI, получение средств, если баланс ниже порога
+        // 1. Check WSFI balance, get funds if balance is below the threshold
         try {
             const wsfiBalance = await getWSFIBalance(wallet);
             if (wsfiBalance < WSFI_THRESHOLD) {
-                logger.info(`Текущий баланс WSFI (${wsfiBalance}) ниже ${WSFI_THRESHOLD}, получение средств`);
+                logger.info(`Current WSFI balance (${wsfiBalance}) is below ${WSFI_THRESHOLD}, getting funds`);
                 const result = await claimFaucetWithRetry(address);
                 switch(result.status) {
                     case 'success':
-                        logger.info('Успешное получение средств из крана', result.data);
+                        logger.info('Successfully got funds from the faucet', result.data);
                         break;
                     case 'already_claimed':
-                        logger.warn('Средства уже были получены из крана', result.message);
+                        logger.warn('Funds have already been claimed from the faucet', result.message);
                         break;
                     case 'failed':
-                        logger.error('Не удалось получить средства из крана', result.message);
+                        logger.error('Failed to get funds from the faucet', result.message);
                         break;
                     default:
-                        logger.info('Неизвестный статус', result);
+                        logger.info('Unknown status', result);
                 }
                 await new Promise(resolve => setTimeout(resolve, 10000));
             }
         } catch (error) {
-            logger.error('Ошибка при проверке баланса WSFI или получении средств:', error.message);
+            logger.error('Error checking WSFI balance or getting funds:', error.message);
         }
 
-        // 2. Конвертация 92% SFI в WSFI
+        // 2. Convert 92% SFI to WSFI
         try {
             const sfiBalance = await getSFIBalance(wallet);
-
             if (sfiBalance >= 9) {
                 const sfiToConvert = sfiBalance * RATIOS.SFI_TO_WSFI;
-                logger.info(`Конвертация ${sfiToConvert} SFI в WSFI`);
+                logger.info(`Converting ${sfiToConvert} SFI to WSFI`);
                 await depositSFI(wallet, sfiToConvert);
                 await new Promise(resolve => setTimeout(resolve, 5000));
             } else {
-                logger.warn('Баланс SFI недостаточен для конвертации, пропуск этого шага');
+                logger.warn('SFI balance insufficient for conversion, skipping this step');
             }
         } catch (error) {
-            logger.error('Ошибка при конвертации SFI в WSFI:', error.message);
+            logger.error('Error converting SFI to WSFI:', error.message);
         }
 
-        // 3. Обмен 8% SFI на AIMM
+        // 3. Swap 8% SFI to AIMM
         try {
             const sfiToSwap = sfiBalance * RATIOS.SFI_TO_SWAP;
-            logger.info(`Обмен ${sfiToSwap} SFI на AIMM`);
+            logger.info(`Swapping ${sfiToSwap} SFI to AIMM`);
             await swapExactETHForTokens(
                 wallet,
                 sfiToSwap.toString(),
@@ -100,18 +99,17 @@ async function runWalletOperations(walletIndex) {
             );
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Не удалось обменять SFI на AIMM:', error.message);
+            logger.error('Failed to swap SFI to AIMM:', error.message);
         }
 
-        // 4. Обмен 8% WSFI на AIMM
+        // 4. Swap 8% WSFI to AIMM
         try {
             const currentWSFIBalance = await getWSFIBalance(wallet);
             const wsfiToSwap = currentWSFIBalance * RATIOS.WSFI_TO_SWAP;
-            logger.info(`Обмен ${wsfiToSwap} WSFI на AIMM`);
+            logger.info(`Swapping ${wsfiToSwap} WSFI to AIMM`);
             let i = 0;
-
             while (i < 2) {
-                logger.warn(`Попытка обмена WSFI на AIMM №${i + 1}`);
+                logger.warn(`Attempt ${i + 1} to swap WSFI to AIMM`);
                 const swapTx2 = await swapExactTokensForTokens(
                     wallet,
                     wsfiToSwap.toString(),
@@ -119,94 +117,86 @@ async function runWalletOperations(walletIndex) {
                     [WSFI_ADDRESS, AIMM_ADDRESS],
                     "115792089237316195423570985008687907853269984665640564039457584007913129639935"
                 );
-                logger.info('Ожидание подтверждения транзакции обмена WSFI на AIMM...');
+                logger.info('Waiting for WSFI to AIMM swap transaction confirmation...');
                 await swapTx2.wait();
-                logger.info('Транзакция обмена WSFI на AIMM подтверждена');
+                logger.info('WSFI to AIMM swap transaction confirmed');
                 await new Promise(resolve => setTimeout(resolve, 5000));
-
                 i++;
             }
         } catch (error) {
-            logger.error('Не удалось обменять WSFI на AIMM:', error.message);
+            logger.error('Failed to swap WSFI to AIMM:', error.message);
         }
 
-        // 5. Первая ставка 5% WSFI
+        // 5. First staking 5% WSFI
         try {
             const wsfiToStake = currentWSFIBalance * RATIOS.WSFI_TO_STAKE;
-            logger.info(`Первая ставка ${wsfiToStake} WSFI`);
+            logger.info(`First staking ${wsfiToStake} WSFI`);
             await stakeTokens(wallet, wsfiToStake);
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Не удалось выполнить первую ставку:', error.message);
+            logger.error('Failed to perform the first staking:', error.message);
         }
 
-        // 6. Первый Claim
+        // 6. First Claim
         try {
-            logger.info("Выполнение первого Claim");
+            logger.info("Performing the first Claim");
             await claim(wallet);
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Первый Claim не удался:', error.message);
+            logger.error('First Claim failed:', error.message);
         }
 
-        // 7. Вторая ставка 5% WSFI
+        // 7. Second staking 5% WSFI
         try {
-            logger.info(`Вторая ставка ${wsfiToStake} WSFI`);
+            logger.info(`Second staking ${wsfiToStake} WSFI`);
             await stakeTokens(wallet, wsfiToStake);
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Вторая ставка не удалась:', error.message);
+            logger.error('Second staking failed:', error.message);
         }
 
-        // 8. Второй Claim
+        // 8. Second Claim
         try {
-            logger.info("Выполнение второго Claim");
+            logger.info("Performing the second Claim");
             await claim(wallet);
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Второй Claim не удался:', error.message);
+            logger.error('Second Claim failed:', error.message);
         }
 
-        // 8.1 withdrawAndClaim (после второго Claim)
+        // 8.1 withdrawAndClaim (after the second Claim)
         try {
-            logger.info("Выполнение withdrawAndClaim");
+            logger.info("Performing withdrawAndClaim");
             await withdrawAndClaim(wallet, 0.01);
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('WithdrawAndClaim не удался:', error.message);
+            logger.error('withdrawAndClaim failed:', error.message);
         }
 
-        // 9. Создание LP
+        // 9. Create LP
         try {
             const aimmBalance = await getTokenBalance(wallet, AIMM_ADDRESS);
             const wsfiBalance = await getTokenBalance(wallet, WSFI_ADDRESS);
-            
             if (!aimmBalance || aimmBalance.isZero()) {
-                throw new Error('Баланс AIMM равен 0, невозможно создать LP');
+                throw new Error('AIMM balance is 0, cannot create LP');
             }
             if (!wsfiBalance || wsfiBalance === 0) {
-                throw new Error('Баланс WSFI равен 0, невозможно создать LP');
+                throw new Error('WSFI balance is 0, cannot create LP');
             }
-
             const minAimm = 0.05;
             const maxAimm = 0.15;
             const random = Math.floor(Math.random() * 1000);
             let aimmToUse = minAimm + (maxAimm - minAimm) * random / 1000;
-
             const aimmBalanceNumber = parseFloat(ethers.utils.formatUnits(aimmBalance, 18));
             if (aimmToUse > aimmBalanceNumber / 2) {
                 aimmToUse = aimmBalanceNumber / 2;
             }
-
             let wsfiForLP = aimmToUse * 10 / 7;
-
             if (wsfiForLP > wsfiBalance / 2) {
                 wsfiForLP = wsfiBalance / 2;
                 aimmToUse = wsfiForLP * 7 / 10;
             }
-
-            logger.info(`Создание LP: использование ${wsfiForLP.toFixed(3)} WSFI и ${aimmToUse.toFixed(3)} AIMM`);
-
+            logger.info(`Creating LP: using ${wsfiForLP.toFixed(3)} WSFI and ${aimmToUse.toFixed(3)} AIMM`);
             await addLiquidity(
                 wallet,
                 WSFI_ADDRESS,
@@ -218,38 +208,33 @@ async function runWalletOperations(walletIndex) {
             );
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Не удалось добавить ликвидность:', error.message);
+            logger.error('Failed to add liquidity:', error.message);
         }
 
-        // 10. Удаление ликвидности
+        // 10. Remove liquidity
         try {
             const pair = await getPair(wallet, WSFI_ADDRESS, AIMM_ADDRESS);
             const lpToken = new ethers.Contract(pair, erc20ABI, wallet);
             const lpBalance = await lpToken.balanceOf(wallet.address);
             const lpBalanceFormatted = ethers.utils.formatEther(lpBalance);
-            
             if (lpBalance.isZero()) {
-                throw new Error('Баланс LP равен 0, невозможно удалить ликвидность');
+                throw new Error('LP balance is 0, cannot remove liquidity');
             }
-
             const allowance = await lpToken.allowance(wallet.address, DEX_CONTRACT_ADDRESS);
             if (allowance.lt(lpBalance)) {
-                logger.info("Авторизация токенов LP...");
+                logger.info("Authorizing LP tokens...");
                 const approveTx = await lpToken.approve(DEX_CONTRACT_ADDRESS, ethers.constants.MaxUint256);
                 const approveReceipt = await approveTx.wait();
-                logger.info(`Авторизация токенов LP успешна, хэш транзакции: ${approveReceipt.transactionHash}`);
-                
+                logger.info(`LP token authorization successful, transaction hash: ${approveReceipt.transactionHash}`);
                 const newAllowance = await lpToken.allowance(wallet.address, DEX_CONTRACT_ADDRESS);
                 if (newAllowance.lt(lpBalance)) {
-                    throw new Error('Не удалось авторизовать токены LP');
+                    throw new Error('Failed to authorize LP tokens');
                 }
             }
-            
             const percentages = [25, 50, 75, 100];
             const selectedPercentage = percentages[Math.floor(Math.random() * percentages.length)];
             const lpToRemove = lpBalance.mul(selectedPercentage).div(100);
-            logger.info(`Удаление ${selectedPercentage}% LP, количество: ${ethers.utils.formatEther(lpToRemove)}`);
-
+            logger.info(`Removing ${selectedPercentage}% LP, amount: ${ethers.utils.formatEther(lpToRemove)}`);
             await removeLiquidity(
                 wallet,
                 WSFI_ADDRESS,
@@ -259,20 +244,20 @@ async function runWalletOperations(walletIndex) {
             );
             await new Promise(resolve => setTimeout(resolve, 5000));
         } catch (error) {
-            logger.error('Не удалось удалить ликвидность:', error.message);
+            logger.error('Failed to remove liquidity:', error.message);
         }
 
-        logger.info(`Операции с кошельком ${walletIndex} успешно завершены`);
-        process.send(`Операции с кошельком ${walletIndex} успешно завершены`);
+        logger.info(`Wallet operations ${walletIndex} completed successfully`);
+        process.send(`Wallet operations ${walletIndex} completed successfully`);
 
     } catch (error) {
-        logger.error(`Операции с кошельком ${walletIndex} не удались:`, error);
-        process.send(`Операции с кошельком ${walletIndex} не удались: ${error.message}`);
+        logger.error(`Wallet operations ${walletIndex} failed:`, error);
+        process.send(`Wallet operations ${walletIndex} failed: ${error.message}`);
     }
 }
 
 const walletIndex = parseInt(process.argv[2], 10);
 runWalletOperations(walletIndex).catch(error => {
-    logger.error(`Операции с кошельком ${walletIndex} не удались:`, error);
+    logger.error(`Wallet operations ${walletIndex} failed:`, error);
     process.exit(1);
 });
