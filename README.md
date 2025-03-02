@@ -19,7 +19,7 @@ This script is designed for automating tasks for SingularityFinance. Follow my T
 1. Ensure Node.js is installed on the system.
 2. Clone the repository:
    ```
-   git clone https://github.com/linuzchico/singularityfinance-bot/
+   git clone https://github.com/linuzchico/singularityfinance-bot
    cd singularityfinance-bot
    ```
 3. Install dependencies:
