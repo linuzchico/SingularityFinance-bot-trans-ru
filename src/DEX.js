@@ -524,10 +524,10 @@ module.exports = {
  swapExactETHForTokens,
  swapExactTokensForETH,
  swapExactTokensForTokens,
- addLiquidity
- addLiquidityETH
- removeLiquidity
- removeLiquidityETH
+ addLiquidity,
+ addLiquidityETH,
+ removeLiquidity,
+ removeLiquidityETH,
  getTokenBalance,
  getAmountsOut,
  getPair,
