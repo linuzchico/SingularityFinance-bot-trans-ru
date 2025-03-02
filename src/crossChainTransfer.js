@@ -15,10 +15,10 @@ async function crossChainTransferWithRetry(wallet, targetAddress, amount, maxRet
             return result;
         } catch (error) {
             if (attempt === maxRetries) {
-                logger.error(`Все попытки не удались, последняя ошибка: ${error.message}`);
+                logger.error(`All attempts failed, last error: ${error.message}`);
                 throw error;
             }
-            logger.warn(`Попытка ${attempt} не удалась, повтор через 5 секунд...`);
+            logger.warn(`Attempt ${attempt} failed, retrying in 5 seconds...`);
             await delay(5000);
         }
     }
@@ -28,7 +28,7 @@ async function crossChainTransfer(wallet, targetAddress, amount) {
     const amountWei = ethers.utils.parseEther(amount.toString());
     const provider = wallet.provider;
     const contractAddress = '0x4200000000000000000000000000000000000016';
-    // Чтение WrappedSFI ABI
+    // Reading WrappedSFI ABI
     const abi = JSON.parse(fs.readFileSync(path.join(__dirname, 'ABI', 'L2ToL1MessagePasserABI.json'), 'utf8'));
     const contract = new ethers.Contract(contractAddress, abi, wallet);
     const gasLimit = 200000;
@@ -37,10 +37,10 @@ async function crossChainTransfer(wallet, targetAddress, amount) {
     try {
         const balance = await provider.getBalance(wallet.address);
         if (balance.lt(amountWei)) {
-            throw new Error('Недостаточно средств');
+            throw new Error('Insufficient funds');
         }
 
-        logger.info('Инициирование кроссчейн перевода...');
+        logger.info('Initiating cross-chain transfer...');
         const tx = await contract.initiateWithdrawal(
             targetAddress,
             gasLimit,
@@ -48,15 +48,15 @@ async function crossChainTransfer(wallet, targetAddress, amount) {
             { value: amountWei }
         );
 
-        logger.info('Транзакция отправлена, ожидание подтверждения...');
+        logger.info('Transaction sent, waiting for confirmation...');
         const receipt = await tx.wait();
-        logger.info(`Транзакция подтверждена! Хэш транзакции: ${receipt.transactionHash}`);
+        logger.info(`Transaction confirmed! Transaction hash: ${receipt.transactionHash}`);
 
-        // Разбор логов событий оставлен закомментированным
+        // Parsing event logs left commented out
 
         return receipt.transactionHash;
     } catch (error) {
-        logger.error('Кроссчейн перевод не удался:', error);
+        logger.error('Cross-chain transfer failed:', error);
         throw error;
     }
 }
