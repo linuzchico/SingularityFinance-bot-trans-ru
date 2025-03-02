@@ -471,7 +471,7 @@ async function removeLiquidityETH(wallet, token, liquidity, amountTokenMin, amou
 
  logger.info(`Removing ETH liquidity...`);
  const tx = await router.removeLiquidityETHSupportingFeeOnTransferTokens(
- token
+ token,
  ethers.utils.parseEther(liquidity.toString()),
  ethers.utils.parseEther(amountTokenMin.toString()),
  ethers.utils.parseEther(amountETHMin.toString()),
