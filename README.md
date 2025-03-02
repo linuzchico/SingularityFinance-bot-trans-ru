@@ -1,51 +1,51 @@
-# Скрипт автоматических задач SingularityFinance
+### SingularityFinance Bot Automatic Tasks Script
 
-Этот скрипт предназначен для автоматизации выполнения задач SingularityFinance.
-Подписывайтесь на мой Твиттер для получения большего количества скриптов: https://x.com/beiyue66 (твиттер создателя если что)
+This script is designed for automating tasks for SingularityFinance. Follow my Twitter for more scripts: [Twitter Creator](https://x.com/linuzchico).
 
-## от меня
-в walletProcess_original.js не было Unstaking, DEX Swap делался только 2 раза, а надо 3, не работало DEX Remove Liquidity
+#### From Me
+- The `walletProcess_original.js` did not include Unstaking.
+- DEX Swap was done only twice, but it should be three times.
+- DEX Remove Liquidity was not working.
 
-## Функции
+### Features
+- Faucet fund retrieval
+- Cross-chain operations
+- SFI and WSFI exchange
+- Staking, unstaking, and rewards retrieval
+- Support for parallel processing of multiple wallets
+- Fully automatic operation, no human intervention required
 
-- Получение средств из крана
-- Кроссчейн операции
-- Обмен SFI и WSFI
-- Стейкинг, анстейкинг, получение наград
-- Поддержка параллельной обработки нескольких кошельков
-- Полностью автоматическая работа, не требует вмешательства человека
+### Usage Instructions
+1. Ensure Node.js is installed on the system.
+2. Clone the repository:
+   ```
+   git clone https://github.com/linuzchico/singularityfinance-bot/
+   cd singularityfinance-bot
+   ```
+3. Install dependencies:
+   ```
+   npm install
+   ```
+   If an error occurs at the beginning, try:
+   ```
+   npm uninstall ethers
+   npm install ethers@5
+   ```
 
-## Инструкция по использованию
+### Configuration
+1. Add the Anti-captcha API key in the `.env` file in the root directory.
+2. Add wallet private keys to `config/private_key.list`, one per line.
 
-1. Убедитесь, что Node.js установлен в системе
-
-2. Клонируйте репозиторий:
-git clone проект на локальный компьютер
-
-3. Установите зависимости:
-npm install
-
-3.1 От себя, если в самом начале выдает ошибку, попробуй
-npm uninstall ethers
-npm install ethers@5
-
-## Конфигурация
-
-1. В файле `.env` в корневом каталоге добавьте API ключ Anti-captcha:
-
-2. В файл `config/private_key.list` добавьте приватные ключи кошельков, по одному на строку:
-
-## Использование
-
-Запустите скрипт:
+### Usage
+Run the script:
+```
 node index.js
+```
+The script will run a separate process for each wallet in an infinite loop, sleeping for 24 hours.
 
-Скрипт запустит отдельный процесс для каждого кошелька, будет работать в бесконечном цикле, засыпая на 24 часа после каждого раунда задач.
-
-## Внимание
-
-- Этот скрипт использует Anti-captcha для решения капчи. Пожалуйста, убедитесь, что у вас достаточно средств на Anti-captcha.
-- Ссылка для регистрации в Anti-captcha: [https://getcaptchasolution.com/lhwl0mkjf2](https://getcaptchasolution.com/lhwl0mkjf2)
-- Скрипт полностью открыт и работает локально, использование на ваш страх и риск.
-- Рекомендуется использовать новый кошелек, автор не несет ответственности за убытки, вызванные использованием скрипта.
-- Настройте параметры работы в зависимости от возможностей вашего оборудования, чтобы избежать чрезмерного использования системных ресурсов.
+### Note
+- This script uses Anti-captcha for solving captchas. Ensure sufficient funds on Anti-captcha.
+- Registration link for Anti-captcha: [Anti-captcha Registration](https://getcaptchasolution.com/lhwl0mkjf2)
+- The script is open-source and runs locally at your own risk.
+- It is recommended to use a new wallet. The author is not responsible for losses caused.
+- Adjust operation parameters according to your hardware capabilities to avoid excessive load.
