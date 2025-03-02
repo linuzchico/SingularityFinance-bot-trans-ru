@@ -15,8 +15,8 @@ function sleep(ms) {
 function printAuthorInfo() {
     logger.info('='.repeat(50));
     logger.info('SingularityFinance Automatic Tasks Script');
-    logger.info('Author: 北月');
-    logger.info('Twitter: https://x.com/beiyue66');
+    logger.info('Author: Kuffal');
+    logger.info('Twitter: https://x.com/kuffal_linuz');
     logger.warn('Warning: Please create a new wallet to use this script.');
     logger.warn('          The author is not responsible for any losses caused by using this script.');
     logger.info('='.repeat(50));
